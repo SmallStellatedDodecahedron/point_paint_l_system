@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L-Systems</title>
+    <style>
+        #canv{
+            background-color: dimgray;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canv"></canvas>
+    <script>
+        const w=1000;
+        const h=1000;   
+        const es=0.001;
+        const ed=0.001; 
+        const er=(Math.PI*2)/32;  
+    </script>
+    <script>
+        const wh=w*h;
+        const mwh=Math.min(w,h);
+        const sw=w<h?w/h:1;
+        const sh=w<h?1:h/w;
+        const canv=document.getElementById("canv");
+        canv.width=w;
+        canv.height=h;
+        const c=canv.getContext("2d");
+        function c2u(x,y){return [(2*x-w)/mwh,-(2*y-h)/mwh];}
+        function u2c(x,y){return [(x*mwh+w)/2,(-y*mwh+h)/2];}
+        function dc2u(d){return d/mwh;}
+        function du2c(d){return d*mwh;}
+        function clear(){
+            c.clearRect(0,0,w,h);
+        }
+        function blot(x,y,r,col){
+            c.fillStyle=col;
+            c.beginPath();
+            c.arc(...u2c(x,y), du2c(r), 0, 2 * Math.PI);
+            c.fill();
+        }
+    </script>
+    <script>
+        function reader(g,i,x,y,rt,col,rd,ss){
+            let cur=g[i];
+            while(cur!="]"&&cur!==undefined){
+                switch (cur) {
+                    case "[":
+                        i=reader(g,i+1,x,y,rt,col,rd,ss);break;
+                    case "!":  
+                        let cnt=1;               
+                        while(cur!==undefined&&cnt>0){
+                            i++;cur=g[i];
+                            cnt += cur=="]"?-1:(cur=="["?1:0);
+                        }
+                        i--;
+                        break;
+                    case "S":
+                        rt=Math.PI/2;break;
+                    case "P":
+                        rt+=er;break;
+                    case "Q":
+                        rt-=er;break;
+
+                    case "V":
+                        rd/=2;break;
+                    case "W":
+                        rd*=2;break;
+                    case "K":
+                        rd/=3;break;
+                    case "L":
+                        rd*=3;break;
+
+                    case "X":
+                        ss/=2;break;
+                    case "Y":
+                        ss*=2;break;
+                    case "I":
+                        ss/=3;break;
+                    case "J":
+                        ss*=3;break;
+
+                    case "M":
+                        x+=ss*Math.cos(rt);y+=ss*Math.sin(rt);break;
+                    case "B":
+                        blot(x,y,rd,col);break;
+
+                    case "0":
+                        col="#000000";break;          
+                    case "1":
+                        col="#ff0000";break;          
+                    case "2":
+                        col="#00ff00";break;          
+                    case "3":
+                        col="#0000ff";break;          
+                    case "4":
+                        col="#00ffff";break;          
+                    case "5":
+                        col="#ff00ff";break;          
+                    case "6":
+                        col="#ffff00";break;          
+                    case "7":
+                        col="#ffffff";break;                    
+                    default:
+                        break;
+                }
+                i++;cur=g[i];
+            }
+            return i;
+        }
+        function draw(genome){
+            clear();
+            reader(genome,0,0,0,Math.PI/2,"#000000",ed,es);
+        }
+
+        function process(genome){
+            return genome;
+        }
+
+        /*const lSystem = {
+            axiom: "WWYSy",
+            rules: {
+                "x": "XMBxMB|x_MBxY",
+                "y": "|abQMBx[Vy][4YW|ab|w_XV]Qy",
+                "z":"y[XVMBx]",
+                "a":"|P_|P_P",
+                "b":"|Q_|Q_Q",
+                "w":"VXQMBPYWwVXQMBPYW",
+                "_":"",
+            },
+            iterations: 14
+        };*/
+        const lSystem = {
+            axiom: "VX_YYWYWYWY_Sk_b",
+            rules: {
+                "b":"[Sx]6MBwb",
+                "w":"MBw",
+                "x":"0BMB[7MBs|PQ|xy][k2MBl]2tMBl",
+                "y":"|xz",
+                "z":"1[MB][tMB][kMB]kkMB",
+                "l":"|!_|!_sx",
+            },
+            lastrules:{
+                "t":"PPPPPPPP",
+                "k":"QQQQQQQQ",
+                "s":"KIKIWYWYWY",
+            },
+            iterations: 10
+        };
+
+        /*
+        sp M B _ |ab ! _
+        rt SPL
+        rd VW KL 
+        ss XY IJ
+        */
+    // Expand the genome based on the rules
+    function generateLSystem(axiom, rules, iterations, lastrules=undefined) {
+        let current = axiom;
+        for (let i = 0; i < iterations; i++) {
+            let next = "";
+            for (let char of current) {
+                next += rules[char] || char; // apply rule or keep char
+            }
+            current = next;
+            next = "";
+            let j=0;
+            while(j<current.length) {
+                let k=current[j];
+                if (k=="|"){
+                    next +=current[j+Math.floor(Math.random()*2)+1] ||""; // random deactivation
+                    j+=3;
+                }else{next +=  k;j++;}
+            }
+            current = next;
+            console.log(current)
+        }
+        if(lastrules!==undefined){
+            let next = "";
+            for (let char of current) {
+                next += lastrules[char] || char; // apply rule or keep char
+            }
+            current = next;
+            console.log(current)
+        }
+        return current;
+    }
+
+    console.log(lSystem)
+    const genome = generateLSystem(lSystem.axiom, lSystem.rules, lSystem.iterations,lSystem.lastrules);
+    draw(genome);
+
+    </script>
+
+</body>
+</html>
